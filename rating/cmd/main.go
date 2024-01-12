@@ -5,17 +5,20 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
+	"net"
 	"time"
 
+	"google.golang.org/grpc"
+	"movieexample.com/gen"
 	"movieexample.com/pkg/discovery"
 	"movieexample.com/pkg/discovery/consul"
 	"movieexample.com/rating/internal/controller/rating"
-	httphandler "movieexample.com/rating/internal/handler/http"
+	grpchandler "movieexample.com/rating/internal/handler/grpc"
 	"movieexample.com/rating/internal/repository/memory"
 )
 
 const serviceName = "rating"
+const consulService = "localhost:8500"
 
 func main() {
 	var port int
@@ -23,11 +26,10 @@ func main() {
 	flag.Parse()
 
 	log.Printf("Starting the rating service on port %d", port)
-	registry, err := consul.NewRegistry("localhost:8500")
+	registry, err := consul.NewRegistry(consulService)
 	if err != nil {
 		panic(err)
 	}
-
 	ctx := context.Background()
 	instanceID := discovery.GenerateInstanceID(serviceName)
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
@@ -46,10 +48,15 @@ func main() {
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
 	repo := memory.New()
-	svc := rating.New(repo)
-	h := httphandler.New(svc)
-	http.Handle("/rating", http.HandlerFunc(h.Handle))
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	ctrl := rating.New(repo)
+	h := grpchandler.New(ctrl)
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	srv := grpc.NewServer()
+	gen.RegisterRatingServiceServer(srv, h)
+	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
 }

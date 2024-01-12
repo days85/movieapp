@@ -13,23 +13,24 @@ import (
 	"movieexample.com/pkg/discovery"
 )
 
+// Gateway defines a movie metadata HTTP gateway.
 type Gateway struct {
 	registry discovery.Registry
 }
 
+// New creates a new HTTP gateway for a movie metadata service.
 func New(registry discovery.Registry) *Gateway {
 	return &Gateway{registry}
 }
 
+// Get gets movie metadata by a movie id.
 func (g *Gateway) Get(ctx context.Context, id string) (*model.Metadata, error) {
 	addrs, err := g.registry.ServiceAddresses(ctx, "metadata")
 	if err != nil {
 		return nil, err
 	}
 	url := "http://" + addrs[rand.Intn(len(addrs))] + "/metadata"
-
-	log.Printf("Calling metadata service. Request GET %s", url)
-
+	log.Printf("Calling metadata service. Request: GET " + url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
