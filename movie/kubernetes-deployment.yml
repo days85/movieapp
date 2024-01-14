@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movie
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rating
+  template:
+    metadata:
+      labels:
+        app: movie
+    spec:
+      containers:
+      - name: movie
+        image: days85/movieapp-movie:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 8083
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: "1"
+          requests:
+            memory: 256Mi
+            cpu: "0.2"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: movie
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8083
+  selector:
+    app: movie
