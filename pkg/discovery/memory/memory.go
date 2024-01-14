@@ -9,12 +9,9 @@ import (
 	"movieexample.com/pkg/discovery"
 )
 
-type serviceName string
-type instanceID string
-
 type Registry struct {
 	sync.RWMutex
-	serviceAddrs map[serviceName]map[instanceID]*serviceInstance
+	serviceAddrs map[string]map[string]*serviceInstance
 }
 
 type serviceInstance struct {
@@ -23,52 +20,52 @@ type serviceInstance struct {
 }
 
 func NewRegistry() *Registry {
-	return &Registry{serviceAddrs: map[serviceName]map[instanceID]*serviceInstance{}}
+	return &Registry{serviceAddrs: map[string]map[string]*serviceInstance{}}
 }
 
-func (r *Registry) Register(_ context.Context, id instanceID, name serviceName, hostPort string) error {
+func (r *Registry) Register(_ context.Context, instanceID string, serviceName string, hostPort string) error {
 	r.Lock()
 	defer r.Unlock()
-	if _, ok := r.serviceAddrs[name]; !ok {
-		r.serviceAddrs[name] = map[instanceID]*serviceInstance{}
+	if _, ok := r.serviceAddrs[serviceName]; !ok {
+		r.serviceAddrs[serviceName] = map[string]*serviceInstance{}
 	}
-	r.serviceAddrs[name][id] = &serviceInstance{hostPort: hostPort, lastActive: time.Now()}
+	r.serviceAddrs[serviceName][instanceID] = &serviceInstance{hostPort: hostPort, lastActive: time.Now()}
 	return nil
 }
 
-func (r *Registry) Deregister(_ context.Context, id instanceID, name serviceName) error {
+func (r *Registry) Deregister(_ context.Context, instanceID string, serviceName string) error {
 	r.Lock()
 	defer r.Unlock()
-	if _, ok := r.serviceAddrs[name]; !ok {
+	if _, ok := r.serviceAddrs[serviceName]; !ok {
 		return nil
 	}
-	delete(r.serviceAddrs[name], id)
+	delete(r.serviceAddrs[serviceName], instanceID)
 	return nil
 }
 
-func (r *Registry) ReportHealthyState(id instanceID, name serviceName) error {
+func (r *Registry) ReportHealthyState(instanceID string, serviceName string) error {
 	r.Lock()
 	defer r.Unlock()
-	if _, ok := r.serviceAddrs[name]; !ok {
+	if _, ok := r.serviceAddrs[serviceName]; !ok {
 		return errors.New("service is not registered yet")
 	}
-	if _, ok := r.serviceAddrs[name][id]; !ok {
+	if _, ok := r.serviceAddrs[serviceName][instanceID]; !ok {
 		return errors.New("service instance is not registered yet")
 	}
-	r.serviceAddrs[name][id].lastActive = time.Now()
+	r.serviceAddrs[serviceName][instanceID].lastActive = time.Now()
 	return nil
 }
 
-func (r *Registry) ServiceAddresses(_ context.Context, name serviceName) ([]string, error) {
+func (r *Registry) ServiceAddresses(_ context.Context, serviceName string) ([]string, error) {
 	r.RLock()
 	defer r.RUnlock()
-	if len(r.serviceAddrs[name]) == 0 {
+	if len(r.serviceAddrs[serviceName]) == 0 {
 		return nil, discovery.ErrNotFound
 	}
 
 	var res []string
 
-	for _, i := range r.serviceAddrs[name] {
+	for _, i := range r.serviceAddrs[serviceName] {
 		if i.lastActive.Before(time.Now().Add(-5 * time.Second)) {
 			continue
 		}

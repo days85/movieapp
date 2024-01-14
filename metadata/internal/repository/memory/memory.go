@@ -17,7 +17,7 @@ func New() *Repository {
 	return &Repository{data: map[string]*model.Metadata{}}
 }
 
-func (r *Repository) GetMetadata(_ context.Context, id string) (*model.Metadata, error) {
+func (r *Repository) Get(_ context.Context, id string) (*model.Metadata, error) {
 	r.RLock()
 	defer r.RUnlock()
 	m, ok := r.data[id]
