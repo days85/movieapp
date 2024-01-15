@@ -5,9 +5,12 @@ import (
 	"database/sql"
 
 	_ "github.com/go-sql-driver/mysql"
+	"go.opentelemetry.io/otel"
 	"movieexample.com/metadata/internal/repository"
 	"movieexample.com/metadata/pkg/model"
 )
+
+const tracerID = "metadata-repository-mysql"
 
 type Repository struct {
 	db *sql.DB
@@ -22,6 +25,8 @@ func New() (*Repository, error) {
 }
 
 func (r *Repository) Get(ctx context.Context, id string) (*model.Metadata, error) {
+	_, span := otel.Tracer(tracerID).Start(ctx, "Repository/Get")
+	defer span.End()
 	var title, description, director string
 	row := r.db.QueryRowContext(ctx, "SELECT title, description, director FROM movies WHERE id = ?", id)
 	if err := row.Scan(&title, &description, &director); err != nil {
@@ -39,6 +44,8 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Metadata, error
 }
 
 func (r *Repository) Put(ctx context.Context, id string, metadata *model.Metadata) error {
+	_, span := otel.Tracer(tracerID).Start(ctx, "Repository/Put")
+	defer span.End()
 	_, err := r.db.ExecContext(
 		ctx,
 		"INSERT INTO movies (id, title, description, director) VALUES (?, ?, ?, ?)",

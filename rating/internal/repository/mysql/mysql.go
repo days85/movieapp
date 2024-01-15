@@ -5,9 +5,12 @@ import (
 	"database/sql"
 
 	_ "github.com/go-sql-driver/mysql"
+	"go.opentelemetry.io/otel"
 	"movieexample.com/rating/internal/repository"
 	"movieexample.com/rating/pkg/model"
 )
+
+const tracerID = "rating-repository-mysql"
 
 type Repository struct {
 	db *sql.DB
@@ -26,6 +29,8 @@ func (r *Repository) Get(
 	recodID model.RecordID,
 	recordType model.RecordType,
 ) ([]model.Rating, error) {
+	_, span := otel.Tracer(tracerID).Start(ctx, "Repository/Get")
+	defer span.End()
 	rows, err := r.db.QueryContext(
 		ctx,
 		"SELECT user_id, value FROM ratings WHERE record_id = ? AND record_type = ?",
@@ -60,6 +65,8 @@ func (r *Repository) Put(
 	recordType model.RecordType,
 	rating *model.Rating,
 ) error {
+	_, span := otel.Tracer(tracerID).Start(ctx, "Repository/Put")
+	defer span.End()
 	_, err := r.db.ExecContext(
 		ctx,
 		"INSERT INTO ratings (record_id, record_type, user_id, value) VALUES (?, ?, ?, ?)",
