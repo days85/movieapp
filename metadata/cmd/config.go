@@ -6,6 +6,7 @@ type config struct {
 	API         apiConfig        `yaml:"api"`
 	Jaeger      jaegerConfig     `yaml:"jaeger"`
 	Prometheus  prometheusConfig `yaml:"prometheus"`
+	Profiler    profilerConfig   `yaml:"profiler"`
 }
 
 type apiConfig struct {
@@ -22,4 +23,8 @@ type jaegerConfig struct {
 
 type prometheusConfig struct {
 	MetricsPort int `yaml:"metricsPort"`
+}
+
+type profilerConfig struct {
+	Port int `yaml:"metricsPort"`
 }

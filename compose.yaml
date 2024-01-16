@@ -105,3 +105,9 @@ services:
       - "9093:9093"
     volumes:
       - "./configs:/etc/alertmanager"
+
+  grafana:
+    image: grafana/grafana-oss
+    container_name: graphana
+    ports:
+      - "3000:3000"

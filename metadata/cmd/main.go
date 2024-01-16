@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"crypto/md5"
+	"flag"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/uber-go/tally"
 	"github.com/uber-go/tally/prometheus"
@@ -39,6 +44,18 @@ func main() {
 		logger.Fatal("Failed to parse configuration", zap.Error(err))
 	}
 	port := cfg.API.Port
+
+	simulateCPULoad := flag.Bool("simulate-cpu-load", false, "simulate CPU load for profiling")
+	flag.Parse()
+	if *simulateCPULoad {
+		go heavyOperation()
+	}
+
+	go func() {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Profiler.Port), nil); err != nil {
+			logger.Fatal("Failed to start profiler handler", zap.Error(err))
+		}
+	}()
 
 	logger.Info("Starting the metadata service", zap.Int("port", port))
 
@@ -120,5 +137,13 @@ func main() {
 	gen.RegisterMetadataServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
 		logger.Fatal("Failed to serve", zap.Error(err))
+	}
+}
+
+func heavyOperation() {
+	for {
+		token := make([]byte, 1024)
+		rand.Read(token)
+		md5.New().Write(token)
 	}
 }
