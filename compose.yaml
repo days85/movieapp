@@ -4,6 +4,7 @@ services:
     container_name: metadata
     ports:
       - "8081:8081"
+      - "8091:8091"
     links:
       - "consul:consul"
     depends_on:
@@ -15,7 +16,8 @@ services:
     build: ./rating
     container_name: rating
     ports:
-      - "8082:8082"
+      - "8082:8081"
+      - "8092:8091"
     links:
       - "consul:consul"
     depends_on:
@@ -27,7 +29,8 @@ services:
     build: ./movie
     container_name: movie
     ports:
-      - "8083:8083"
+      - "8083:8081"
+      - "8093:8091"
     links:
       - "consul:consul"
       - "metadata:metadata"
@@ -75,3 +78,30 @@ services:
       - "9411:9411"
     environment:
       - COLLECTOR_ZIPKIN_HOST_PORT=9411
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - "./configs:/etc/prometheus"
+    links:
+      - "consul:consul"
+      - "movie:movie"
+      - "metadata:metadata"
+      - "rating:rating"
+    depends_on:
+      - consul
+      - movie
+      - metadata
+      - rating
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - "./configs:/etc/alertmanager"

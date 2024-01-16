@@ -1,0 +1,15 @@
+global:
+  resolve_timeout: 5m
+route:
+  group_by: ['alertname']
+  repeat_interval: 1m
+  receiver: 'email'
+receivers:
+- name: 'email'
+  email_configs:
+  - to: 'test@gmail.com'
+    from: 'test@gmail.com'
+    smarthost: sandbox.smtp.mailtrap.io:587
+    auth_username: 'd06f92f58bed19'
+    auth_identity: 'd06f92f58bed19'
+    auth_password: '576c871cff6508'

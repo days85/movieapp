@@ -1,4 +1,9 @@
+serviceName: rating
+consul:
+  url: consul:8500
 api:
-  port: 8082
+  port: 8081
 jaeger:
   url: http://jaeger:14268/api/traces
+prometheus:
+  metricsPort: 8091
